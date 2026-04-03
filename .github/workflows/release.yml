@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # triggers on tags like v1.0.0, v0.2.1, etc.
+
+permissions:
+  contents: write       # needed to create GitHub releases and upload assets
+  packages: write       # needed to publish to GitHub Packages
+
+jobs:
+  release:
+    name: Build, publish & release
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 2. Set up Java 11 (matches project source/target compatibility)
+      # -----------------------------------------------------------------------
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: gradle
+
+      # -----------------------------------------------------------------------
+      # 3. Derive version from the git tag  (v1.2.3 → 1.2.3)
+      # -----------------------------------------------------------------------
+      - name: Derive release version
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # 4. Build (compile + test)
+      # -----------------------------------------------------------------------
+      - name: Build and test
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./gradlew build
+
+      # -----------------------------------------------------------------------
+      # 5. Publish JAR + sources + javadoc to GitHub Packages
+      # -----------------------------------------------------------------------
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository
+
+      # -----------------------------------------------------------------------
+      # 6. Collect artifact paths for the release upload
+      # -----------------------------------------------------------------------
+      - name: Locate artifacts
+        id: artifacts
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          LIBS=build/libs
+          echo "jar=$LIBS/smolcumentdb-${RELEASE_VERSION}.jar"         >> "$GITHUB_OUTPUT"
+          echo "sources=$LIBS/smolcumentdb-${RELEASE_VERSION}-sources.jar" >> "$GITHUB_OUTPUT"
+          echo "javadoc=$LIBS/smolcumentdb-${RELEASE_VERSION}-javadoc.jar" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # 7. Create GitHub Release and upload artifacts
+      # -----------------------------------------------------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SmolcumentDB v${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.artifacts.outputs.jar }}
+            ${{ steps.artifacts.outputs.sources }}
+            ${{ steps.artifacts.outputs.javadoc }}

@@ -4,11 +4,15 @@ plugins {
 }
 
 group = 'com.smolcumentdb'
-version = '0.1.0'
+// Version is set from the git tag in CI (e.g. refs/tags/v1.2.3 → 1.2.3).
+// Falls back to '0.1.0-SNAPSHOT' for local development.
+version = System.getenv('RELEASE_VERSION') ?: '0.1.0-SNAPSHOT'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withSourcesJar()
+    withJavadocJar()
 }
 
 repositories {
@@ -45,6 +49,27 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            pom {
+                name = 'SmolcumentDB'
+                description = 'Embedded in-memory MongoDB-compatible document database for Java'
+                url = 'https://github.com/' + (System.getenv('GITHUB_REPOSITORY') ?: 'smolcumentdb/smolcumentdb')
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url  = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url  = uri('https://maven.pkg.github.com/' + (System.getenv('GITHUB_REPOSITORY') ?: 'smolcumentdb/smolcumentdb'))
+            credentials {
+                username = System.getenv('GITHUB_ACTOR')
+                password = System.getenv('GITHUB_TOKEN')
+            }
         }
     }
 }
