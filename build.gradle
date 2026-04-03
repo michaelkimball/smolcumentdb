@@ -2,7 +2,8 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id 'com.gradleup.nmcp' version '0.0.9'
+    id 'com.gradleup.nmcp' version '1.4.4'
+    id 'com.gradleup.nmcp.aggregation' version '1.4.4'
 }
 
 group = 'io.github.michaelkimball'
@@ -89,14 +90,17 @@ publishing {
     }
 }
 
-// Publishes the signed mavenJava bundle to Sonatype Central Portal.
-nmcp {
-    username = System.getenv('SONATYPE_USERNAME')
-    password = System.getenv('SONATYPE_PASSWORD')
-    publicationType = 'AUTOMATIC'   // promotes straight to Central without manual review
-    publications {
-        mavenJava { }
+// Publishes the signed bundle to Sonatype Central Portal.
+nmcpAggregation {
+    centralPortal {
+        username = System.getenv('SONATYPE_USERNAME')
+        password = System.getenv('SONATYPE_PASSWORD')
+        publishingType = 'AUTOMATIC'   // promotes straight to Central without manual review
     }
+}
+
+dependencies {
+    nmcpAggregation project(path)
 }
 
 signing {

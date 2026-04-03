@@ -72,7 +72,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: ./gradlew publishAggregationPublicationToCentralPortal
+        run: ./gradlew publishAggregationToCentralPortal
 
       # -----------------------------------------------------------------------
       # 6. Collect artifact paths for the release upload
