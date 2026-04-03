@@ -1,7 +1,7 @@
 # SmolcumentDB
 
 [![Release](https://img.shields.io/github/v/release/michaelkimball/smolcumentdb)](https://github.com/michaelkimball/smolcumentdb/releases)
-[![GitHub Packages](https://img.shields.io/badge/GitHub%20Packages-maven-blue)](https://github.com/michaelkimball/smolcumentdb/packages)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.michaelkimball/smolcumentdb)](https://central.sonatype.com/artifact/io.github.michaelkimball/smolcumentdb)
 
 An embedded, in-memory MongoDB-compatible document database for Java 11+.  
 It implements the [MongoDB Wire Protocol](https://www.mongodb.com/docs/manual/reference/mongodb-wire-protocol/) over a local TCP socket using [Netty](https://netty.io/), so the standard **MongoDB Java Driver 4.x** and **[Morphia 2.x](https://morphia.dev/)** work against it without any modification - the same way [H2](https://h2database.com/) works for SQL.
@@ -19,49 +19,26 @@ It implements the [MongoDB Wire Protocol](https://www.mongodb.com/docs/manual/re
 
 ### Dependency
 
-Packages are published to [GitHub Packages](https://github.com/michaelkimball/smolcumentdb/packages).
+Available on [Maven Central](https://central.sonatype.com/artifact/io.github.michaelkimball/smolcumentdb) — no additional repository configuration needed.
 
 **Gradle**
 
 ```groovy
-repositories {
-    maven {
-        url = uri('https://maven.pkg.github.com/michaelkimball/smolcumentdb')
-        credentials {
-            username = project.findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
-            password = project.findProperty('gpr.key')  ?: System.getenv('GITHUB_TOKEN')
-        }
-    }
-}
-
 dependencies {
-    testImplementation 'com.smolcumentdb:smolcumentdb:0.1.0'
+    testImplementation 'io.github.michaelkimball:smolcumentdb:0.1.0'
 }
 ```
 
 **Maven**
 
 ```xml
-<repositories>
-  <repository>
-    <id>github</id>
-    <url>https://maven.pkg.github.com/michaelkimball/smolcumentdb</url>
-  </repository>
-</repositories>
-
 <dependency>
-  <groupId>com.smolcumentdb</groupId>
+  <groupId>io.github.michaelkimball</groupId>
   <artifactId>smolcumentdb</artifactId>
   <version>0.1.0</version>
   <scope>test</scope>
 </dependency>
 ```
-
-> GitHub Packages requires authentication. Add your token to `~/.gradle/gradle.properties`:
-> ```
-> gpr.user=YOUR_GITHUB_USERNAME
-> gpr.key=YOUR_PERSONAL_ACCESS_TOKEN
-> ```
 
 ### With the MongoDB Java Driver
 
