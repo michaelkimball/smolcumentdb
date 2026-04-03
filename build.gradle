@@ -1,0 +1,50 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'com.smolcumentdb'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // MongoDB BSON – for document serialization/deserialization (no mongo server needed)
+    api 'org.mongodb:bson:4.11.5'
+
+    // Netty – for the TCP wire protocol server
+    api 'io.netty:netty-all:4.1.118.Final'
+
+    // SLF4J API – logging facade
+    api 'org.slf4j:slf4j-api:2.0.16'
+
+    // Test dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testImplementation 'org.mongodb:mongodb-driver-sync:4.11.5'
+    testImplementation 'dev.morphia.morphia:morphia-core:2.4.14'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.16'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = true
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}

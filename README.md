@@ -1,0 +1,231 @@
+# SmolcumentDB
+
+An embedded, in-memory MongoDB-compatible document database for Java 11+.  
+It implements the [MongoDB Wire Protocol](https://www.mongodb.com/docs/manual/reference/mongodb-wire-protocol/) over a local TCP socket using [Netty](https://netty.io/), so the standard **MongoDB Java Driver 4.x** and **[Morphia 2.x](https://morphia.dev/)** work against it without any modification - the same way [H2](https://h2database.com/) works for SQL.
+
+---
+
+## Use cases
+
+- **Unit and integration testing** - start a fresh embedded instance per test class, isolated and fast
+- **Lightweight embedded production use** - ship a self-contained app that doesn't need a MongoDB server
+
+---
+
+## Quick start
+
+### Dependency (Gradle)
+
+```groovy
+testImplementation 'com.smolcumentdb:smolcumentdb:0.1.0'
+```
+
+### With the MongoDB Java Driver
+
+```java
+SmolcumentDB db = SmolcumentDB.start();
+
+MongoClient client = MongoClients.create(db.getConnectionString());
+MongoDatabase database = client.getDatabase("mydb");
+MongoCollection<Document> users = database.getCollection("users");
+
+users.insertOne(new Document("name", "Alice").append("age", 30));
+Document found = users.find(Filters.eq("name", "Alice")).first();
+System.out.println(found.getString("name")); // Alice
+
+client.close();
+db.stop();
+```
+
+### With Morphia 2.x
+
+```java
+SmolcumentDB db = SmolcumentDB.start();
+MongoClient client = MongoClients.create(db.getConnectionString());
+Datastore ds = Morphia.createDatastore(client, "mydb");
+
+// Save an entity
+User alice = ds.save(new User("Alice", 30));
+
+// Query
+User found = ds.find(User.class)
+        .filter(Filters.eq("name", "Alice"))
+        .first();
+
+// Update
+ds.find(User.class)
+        .filter(Filters.eq("name", "Alice"))
+        .update(UpdateOperators.set("age", 31))
+        .execute();
+
+// Delete
+ds.find(User.class)
+        .filter(Filters.eq("name", "Alice"))
+        .delete();
+
+client.close();
+db.stop();
+```
+
+---
+
+## Configuration
+
+Use the fluent builder to configure the server before starting:
+
+```java
+SmolcumentDB db = SmolcumentDB.builder()
+        .host("127.0.0.1")
+        .port(0)        // 0 = pick a random free port (recommended for tests)
+        .start();
+
+System.out.println(db.getConnectionString()); // e.g. "mongodb://127.0.0.1:54321"
+System.out.println(db.getPort());             // e.g. 54321
+```
+
+| Builder method | Default | Description |
+|---|---|---|
+| `.host(String)` | `"127.0.0.1"` | Bind address |
+| `.port(int)` | `0` | TCP port; `0` picks a random free port |
+
+---
+
+## JUnit 5 pattern
+
+```java
+@TestInstance(Lifecycle.PER_CLASS)
+class MyServiceTest {
+
+    SmolcumentDB db;
+    MongoClient  client;
+    Datastore    ds;
+
+    @BeforeAll
+    void start() {
+        db     = SmolcumentDB.start();
+        client = MongoClients.create(db.getConnectionString());
+        ds     = Morphia.createDatastore(client, "testdb");
+    }
+
+    @AfterAll
+    void stop() {
+        client.close();
+        db.stop();
+    }
+
+    @AfterEach
+    void reset() {
+        // Wipe all data between tests
+        db.getStorage().reset();
+    }
+}
+```
+
+---
+
+## Supported features
+
+### CRUD
+
+| Operation | MongoDB command |
+|---|---|
+| Insert one / many | `insert` |
+| Find with filter, sort, skip, limit, projection | `find` |
+| Update one / many (with upsert) | `update` |
+| Delete one / many | `delete` |
+| Cursor pagination | `getMore` |
+
+### Query filter operators
+
+| Category | Operators |
+|---|---|
+| Comparison | `$eq` `$ne` `$gt` `$gte` `$lt` `$lte` `$in` `$nin` |
+| Logical | `$and` `$or` `$nor` `$not` |
+| Element | `$exists` `$type` |
+| Evaluation | `$regex` (with `i`, `m`, `s`, `x` options) |
+| Array | `$all` `$elemMatch` `$size` |
+| Other | dot-notation field paths (e.g. `"address.city"`) |
+
+### Update operators
+
+`$set`, `$unset`, `$inc`, `$push`, `$pull`, `$addToSet`, `$rename`
+
+Full document replacement (no `$` operators) and upsert are also supported.
+
+### Aggregation pipeline stages
+
+`$match`, `$sort`, `$limit`, `$skip`, `$project`, `$group`, `$count`, `$unwind`, `$addFields`
+
+#### Accumulator expressions (inside `$group`)
+
+`$sum`, `$avg`, `$min`, `$max`, `$first`, `$last`, `$push`, `$addToSet`, `$count`
+
+#### Value expressions
+
+`$sum`, `$concat`, `$toUpper`, `$toLower` (field references with `$fieldName`)
+
+### Admin commands
+
+`listDatabases`, `listCollections`, `drop`, `dropDatabase`, `create` (createCollection), `createIndexes` (acknowledged no-op), `count`, `killCursors`
+
+---
+
+## Architecture
+
+```
+SmolcumentDB
+├── Wire Protocol Layer  (Netty TCP)
+│   ├── MongoMessageDecoder   Frame bytes → MongoMessage (OP_MSG + legacy OP_QUERY)
+│   └── MongoMessageEncoder   MongoResponse → OP_MSG bytes
+├── Command Dispatch
+│   └── CommandDispatcher     Routes command name → handler
+├── Command Handlers
+│   ├── HandshakeHandler      hello / isMaster / ping / buildInfo
+│   ├── InsertHandler
+│   ├── FindHandler           + server-side cursor registry
+│   ├── UpdateHandler
+│   ├── DeleteHandler
+│   ├── AggregateHandler
+│   ├── AdminHandler
+│   └── GetMoreHandler
+├── Storage Layer
+│   ├── InMemoryStorage       ConcurrentHashMap<db, ConcurrentHashMap<coll, InMemoryCollection>>
+│   └── InMemoryCollection    CopyOnWriteArrayList<BsonDocument> - thread-safe reads & writes
+├── Query Engine
+│   └── FilterEvaluator       Evaluates MongoDB filter documents against BsonDocuments
+├── Aggregation Engine
+│   └── AggregationPipeline   Executes pipeline stages in order
+└── Public API
+    ├── SmolcumentDB          start() / stop() / getConnectionString()
+    └── SmolcumentDBBuilder   Fluent builder
+```
+
+The server advertises **wire version 17** (equivalent to MongoDB 6.0), which satisfies the MongoDB Java Driver 4.x requirement of `maxWireVersion >= 6`.
+
+---
+
+## Limitations
+
+- **No persistence** - data lives only in JVM heap memory
+- **No authentication** - auth commands are silently accepted and no-oped
+- **No TLS**
+- **Indexes are acknowledged but not enforced** - unique/sparse constraints are not checked
+- **Aggregation expressions** - only a subset of `$project`/`$addFields` expressions are implemented (`$sum`, `$concat`, `$toUpper`, `$toLower`)
+- **Transactions** - not supported
+
+---
+
+## Building
+
+Requires Java 11+ and Gradle (or use the included wrapper).
+
+```bash
+# Build
+./gradlew build
+
+# Run tests
+./gradlew test
+
+# Publish to local Maven repository
+./gradlew publishToMavenLocal
+```
