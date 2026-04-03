@@ -29,7 +29,7 @@ public class SmolcumentDBServer {
     private EventLoopGroup workerGroup;
     private Channel serverChannel;
 
-    /** Actual bound port — equals {@code port} unless 0 was requested (random). */
+    /** Actual bound port - equals {@code port} unless 0 was requested (random). */
     private int boundPort;
 
     public SmolcumentDBServer(String host, int port, InMemoryStorage storage) {

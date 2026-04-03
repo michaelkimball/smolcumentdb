@@ -76,7 +76,7 @@ public class InMemoryCollection {
     }
 
     // -------------------------------------------------------------------------
-    // Read operations (snapshot — safe without lock due to CopyOnWriteArrayList)
+    // Read operations (snapshot - safe without lock due to CopyOnWriteArrayList)
     // -------------------------------------------------------------------------
 
     public List<BsonDocument> find(BsonDocument filter, com.smolcumentdb.query.FilterEvaluator evaluator) {
@@ -115,7 +115,7 @@ public class InMemoryCollection {
         // If the update document has no known operator keys, treat as a full replacement.
         boolean hasOperator = update.keySet().stream().anyMatch(k -> k.startsWith("$"));
         if (!hasOperator) {
-            // Full replacement — preserve _id
+            // Full replacement - preserve _id
             BsonDocument replacement = update.clone();
             if (!replacement.containsKey("_id") && doc.containsKey("_id")) {
                 replacement.put("_id", doc.get("_id"));

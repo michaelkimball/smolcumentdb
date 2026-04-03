@@ -31,7 +31,7 @@ public class AggregationPipeline {
                 case "$count":   docs = stageCount(docs, stageArg.asString().getValue()); break;
                 case "$unwind":  docs = stageUnwind(docs, stageArg); break;
                 case "$addFields": docs = stageAddFields(docs, stageArg.asDocument()); break;
-                default: // unknown stage — pass through
+                default: // unknown stage - pass through
                     break;
             }
         }
@@ -253,7 +253,7 @@ public class AggregationPipeline {
         switch (op) {
             case "$sum": {
                 if (fieldExpr.isNumber()) {
-                    // constant — multiply by group size
+                    // constant - multiply by group size
                     return new BsonInt64((long) fieldExpr.asNumber().intValue() * group.size());
                 }
                 double total = 0;

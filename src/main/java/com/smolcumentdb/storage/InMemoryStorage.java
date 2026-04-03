@@ -53,7 +53,7 @@ public class InMemoryStorage {
         databases.remove(db);
     }
 
-    /** Wipes all data — useful for test teardown. */
+    /** Wipes all data - useful for test teardown. */
     public void reset() {
         databases.clear();
     }

@@ -134,7 +134,7 @@ public class FilterEvaluator {
                     break;
                 }
                 default:
-                    // Unknown operator — ignore (permissive)
+                    // Unknown operator - ignore (permissive)
                     break;
             }
         }

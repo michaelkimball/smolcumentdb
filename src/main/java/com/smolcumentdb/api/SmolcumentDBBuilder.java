@@ -27,7 +27,7 @@ public class SmolcumentDBBuilder {
 
     /**
      * Sets the TCP port. Use {@code 0} (the default) to let the OS pick a
-     * random available port — recommended for tests to avoid conflicts.
+     * random available port - recommended for tests to avoid conflicts.
      */
     public SmolcumentDBBuilder port(int port) {
         this.port = port;

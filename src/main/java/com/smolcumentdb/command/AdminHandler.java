@@ -94,7 +94,7 @@ public class AdminHandler {
         return response;
     }
 
-    /** No-op — indexes are not enforced in-memory but we acknowledge the command. */
+    /** No-op - indexes are not enforced in-memory but we acknowledge the command. */
     public BsonDocument createIndexes(BsonDocument command) {
         BsonDocument response = new BsonDocument();
         response.put("numIndexesBefore", new BsonInt32(1));

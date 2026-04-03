@@ -1,5 +1,8 @@
 # SmolcumentDB
 
+[![Release](https://img.shields.io/github/v/release/michaelkimball/smolcumentdb)](https://github.com/michaelkimball/smolcumentdb/releases)
+[![GitHub Packages](https://img.shields.io/badge/GitHub%20Packages-maven-blue)](https://github.com/michaelkimball/smolcumentdb/packages)
+
 An embedded, in-memory MongoDB-compatible document database for Java 11+.  
 It implements the [MongoDB Wire Protocol](https://www.mongodb.com/docs/manual/reference/mongodb-wire-protocol/) over a local TCP socket using [Netty](https://netty.io/), so the standard **MongoDB Java Driver 4.x** and **[Morphia 2.x](https://morphia.dev/)** work against it without any modification - the same way [H2](https://h2database.com/) works for SQL.
 
@@ -14,11 +17,51 @@ It implements the [MongoDB Wire Protocol](https://www.mongodb.com/docs/manual/re
 
 ## Quick start
 
-### Dependency (Gradle)
+### Dependency
+
+Packages are published to [GitHub Packages](https://github.com/michaelkimball/smolcumentdb/packages).
+
+**Gradle**
 
 ```groovy
-testImplementation 'com.smolcumentdb:smolcumentdb:0.1.0'
+repositories {
+    maven {
+        url = uri('https://maven.pkg.github.com/michaelkimball/smolcumentdb')
+        credentials {
+            username = project.findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
+            password = project.findProperty('gpr.key')  ?: System.getenv('GITHUB_TOKEN')
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'com.smolcumentdb:smolcumentdb:0.1.0'
+}
 ```
+
+**Maven**
+
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/michaelkimball/smolcumentdb</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.smolcumentdb</groupId>
+  <artifactId>smolcumentdb</artifactId>
+  <version>0.1.0</version>
+  <scope>test</scope>
+</dependency>
+```
+
+> GitHub Packages requires authentication. Add your token to `~/.gradle/gradle.properties`:
+> ```
+> gpr.user=YOUR_GITHUB_USERNAME
+> gpr.key=YOUR_PERSONAL_ACCESS_TOKEN
+> ```
 
 ### With the MongoDB Java Driver
 
@@ -170,47 +213,13 @@ Full document replacement (no `$` operators) and upsert are also supported.
 
 ---
 
-## Architecture
-
-```
-SmolcumentDB
-├── Wire Protocol Layer  (Netty TCP)
-│   ├── MongoMessageDecoder   Frame bytes → MongoMessage (OP_MSG + legacy OP_QUERY)
-│   └── MongoMessageEncoder   MongoResponse → OP_MSG bytes
-├── Command Dispatch
-│   └── CommandDispatcher     Routes command name → handler
-├── Command Handlers
-│   ├── HandshakeHandler      hello / isMaster / ping / buildInfo
-│   ├── InsertHandler
-│   ├── FindHandler           + server-side cursor registry
-│   ├── UpdateHandler
-│   ├── DeleteHandler
-│   ├── AggregateHandler
-│   ├── AdminHandler
-│   └── GetMoreHandler
-├── Storage Layer
-│   ├── InMemoryStorage       ConcurrentHashMap<db, ConcurrentHashMap<coll, InMemoryCollection>>
-│   └── InMemoryCollection    CopyOnWriteArrayList<BsonDocument> - thread-safe reads & writes
-├── Query Engine
-│   └── FilterEvaluator       Evaluates MongoDB filter documents against BsonDocuments
-├── Aggregation Engine
-│   └── AggregationPipeline   Executes pipeline stages in order
-└── Public API
-    ├── SmolcumentDB          start() / stop() / getConnectionString()
-    └── SmolcumentDBBuilder   Fluent builder
-```
-
-The server advertises **wire version 17** (equivalent to MongoDB 6.0), which satisfies the MongoDB Java Driver 4.x requirement of `maxWireVersion >= 6`.
-
----
-
 ## Limitations
 
 - **No persistence** - data lives only in JVM heap memory
 - **No authentication** - auth commands are silently accepted and no-oped
 - **No TLS**
 - **Indexes are acknowledged but not enforced** - unique/sparse constraints are not checked
-- **Aggregation expressions** - only a subset of `$project`/`$addFields` expressions are implemented (`$sum`, `$concat`, `$toUpper`, `$toLower`)
+- **Aggregation expressions** - only a subset of `$project`/`$addFields` expressions is implemented
 - **Transactions** - not supported
 
 ---
@@ -220,12 +229,16 @@ The server advertises **wire version 17** (equivalent to MongoDB 6.0), which sat
 Requires Java 11+ and Gradle (or use the included wrapper).
 
 ```bash
-# Build
-./gradlew build
-
-# Run tests
-./gradlew test
-
-# Publish to local Maven repository
-./gradlew publishToMavenLocal
+./gradlew build   # compile + test
+./gradlew test    # tests only
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on building, releasing, and contributing.
+
+---
+
+## Repository
+
+- **GitHub**: https://github.com/michaelkimball/smolcumentdb
+- **Packages**: https://github.com/michaelkimball/smolcumentdb/packages
+- **Releases**: https://github.com/michaelkimball/smolcumentdb/releases

@@ -33,7 +33,7 @@ public class MongoServerHandler extends SimpleChannelInboundHandler<MongoMessage
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.error("Channel error — closing connection", cause);
+        LOG.error("Channel error - closing connection", cause);
         ctx.close();
     }
 }
